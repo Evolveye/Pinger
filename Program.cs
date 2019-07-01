@@ -5,7 +5,10 @@ using System.Threading;
 
 namespace App {
   class Pinger {
-    static List<long> _jumps = new List<long>();
+    static List<long> Jumps = new List<long>();
+    static ConsoleColor InitialColor = Console.ForegroundColor;
+    static float Good = 7;
+    static float Warn = 15;
 
     static void Main(string[] args) {
       Timer timer = new Timer( t => Ping(), null, 1, 1000 );
@@ -20,25 +23,30 @@ namespace App {
       int y = Console.WindowHeight - different; // 5;
 
       bool [,] console = new bool[ y, x ];
-      long highestJump = y * 3;
-      float multiplier;
+      long highestJump = 0;
 
       Console.Clear();
 
-      _jumps.Insert( 0, pingReply.RoundtripTime );
-      _jumps.ForEach( jump => {
+      Jumps.Insert( 0, pingReply.RoundtripTime ); // pingReply.RoundtripTime
+
+      for ( int i = Jumps.Count - 1;  i > x;  --i )
+        Jumps.RemoveAt( i );
+
+      Jumps.ForEach( jump => {
         if ( jump > highestJump )
           highestJump = jump;
       } );
 
-      multiplier = (float) y / (float) highestJump;
+      float multiplier = (float) y / highestJump;
+      float ping_good = Good * multiplier;
+      float ping_warn = Warn * multiplier;
 
       for ( int i = 0;  i < y;  ++i )
         for ( int j = 0;  j < x;  ++j ) {
           bool cell;
 
-          if ( j < _jumps.Count )
-            cell = _jumps[ j ] * multiplier >= i;
+          if ( j < Jumps.Count )
+            cell = Jumps[ j ] * multiplier >= i;
           else
             cell = false;
 
@@ -48,9 +56,28 @@ namespace App {
       for ( int i = y - 1;  i >= 0;  --i ) {
         Console.Write( "\n" );
 
+        if ( i < ping_good )
+          Console.ForegroundColor = ConsoleColor.Green;
+        else if ( i < ping_warn )
+          Console.ForegroundColor = ConsoleColor.Yellow;
+        else
+          Console.ForegroundColor = ConsoleColor.Red;
+
         for ( int j = 0;  j < x;  ++j )
           Console.Write( console[ i, j ]  ?  "#"  :  " " );
       }
+
+      Console.ForegroundColor = ConsoleColor.White;
+      Console.Write( "\n"
+        + " |Wysokość:" + y
+        + " |Ping:" + pingReply.RoundtripTime
+        + " |Najwyższy:" + highestJump
+        + " |Mnożnik:" + multiplier
+        + " |GoodLimit:" + ping_good
+        + " |Good:" + Good
+        + "\n"
+      );
+      Console.ForegroundColor = InitialColor;
     }
   }
 }
