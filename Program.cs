@@ -10,6 +10,7 @@ namespace App {
     static int ReallyGood = 25;
     static int Good = 120;
     static int Warn = 180;
+    static string address = "login.p1.worldoftanks.eu";
 
     // static string row = "═";
     // static string column = "║";
@@ -34,7 +35,7 @@ namespace App {
       Timer timer = new Timer( t => {
         try {
           Ping ping = new Ping();
-          PingReply pingReply = ping.Send( "google.com" );
+          PingReply pingReply = ping.Send( address );
 
           DrawPingData pingData = DrawPing(
             pingReply.RoundtripTime,
@@ -54,6 +55,7 @@ namespace App {
 
     static string Untrim( int num, int length ) => Untrim( "" + num, length );
     static string Untrim( long num, int length ) => Untrim( "" + num, length );
+    static string Untrim( float num, int length ) => Untrim( "" + num, length );
     static string Untrim( string str, int length ) {
       for ( int i = str.Length;  i < length;  ++i )
         str += " ";
@@ -65,9 +67,11 @@ namespace App {
 
     }
     static void FillBottomScope( PingReply pingReply, DrawPingData pingData ) {
-      string str = "Ping: " + Untrim( pingReply.RoundtripTime, 8 )
+      string str = "Adres: " + Untrim( address, 8 )
+        + "   Ping: " + Untrim( pingReply.RoundtripTime, 8 )
         + "   Najwyższy: " + Untrim( pingData.HighestJump, 8 )
-        // + "   Mnożnik: " + pingData.Multiplier
+        + "   Mnożnik: " + Untrim( pingData.Multiplier, 8 )
+        + "   Wysokość: " + Untrim( Console.WindowHeight - 2, 8 )
         ;
 
       Console.CursorLeft = 0;
