@@ -12,6 +12,13 @@ namespace App {
     static int Warn = 180;
     static string address = "login.p1.worldoftanks.eu";
 
+    static int savedConsoleWidth = 0;
+    static int savedConsoleHeight = 0;
+    static int scopeSize_leftWidth = 5;
+    static int scopeSize_bottomHeight = 1;
+    static int scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
+    static int scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
+
     // static string row = "═";
     // static string column = "║";
     // static string cornerLT = "╔";
@@ -25,14 +32,12 @@ namespace App {
     }
 
     static void Main() {
-      int scopeSize_leftWidth = 5;
-      int scopeSize_bottomHeight = 1;
-      int scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
-      int scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
-
-      CreateScene( scopeSize_leftWidth, scopeSize_bottomHeight );
+      Console.CursorVisible = false;
+      Console.Clear();
 
       Timer timer = new Timer( t => {
+        TestSizes();
+
         try {
           Ping ping = new Ping();
           PingReply pingReply = ping.Send( address );
@@ -63,6 +68,15 @@ namespace App {
       return str;
     }
 
+    static void TestSizes() {
+      if ( savedConsoleWidth != Console.WindowWidth || savedConsoleHeight != Console.WindowHeight ) {
+        CreateScene( scopeSize_leftWidth, scopeSize_bottomHeight );
+
+        scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
+        scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
+      }
+    }
+
     static void FillLeftScope( DrawPingData pingData ) {
 
     }
@@ -80,9 +94,6 @@ namespace App {
       Console.Write( Untrim( str, Console.WindowWidth - 1 ) );
     }
     static void CreateScene( int leftBarWidth, int bottomBarHeight ) {
-      Console.CursorVisible = false;
-      Console.Clear();
-
       int width = Console.WindowWidth - 1;
       int height = Console.WindowHeight - 1;
 
