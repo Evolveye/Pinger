@@ -12,6 +12,7 @@ namespace App {
     static int Good = 120;
     static int Warn = 180;
     static string address;
+    static int redrawHelper = 0;
 
     static int savedConsoleWidth = 0;
     static int savedConsoleHeight = 0;
@@ -56,10 +57,11 @@ namespace App {
     }
 
     static void TestSizes() {
-      if ( savedConsoleWidth != Console.WindowWidth || savedConsoleHeight != Console.WindowHeight ) {
+      if ( redrawHelper++ == 0 ||savedConsoleWidth != Console.WindowWidth || savedConsoleHeight != Console.WindowHeight ) {
         Console.Clear();
         CreateScene( scopeSize_leftWidth, scopeSize_bottomHeight );
 
+        redrawHelper = 30;
         savedConsoleWidth = Console.WindowWidth;
         savedConsoleHeight = Console.WindowHeight;
         scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
