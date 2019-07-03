@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
-using System.Threading;
+using System.Timers;
 
 namespace App {
   class Pinger {
+    static int MaxStoredJumps = 60 * 10;
     static List<long> Jumps = new List<long>();
     static ConsoleColor InitialColor = Console.ForegroundColor;
     static int ReallyGood = 25;
     static int Good = 120;
     static int Warn = 180;
-    static string address = "login.p1.worldoftanks.eu";
+    static string address = "google.com";
 
     static int savedConsoleWidth = 0;
     static int savedConsoleHeight = 0;
@@ -29,32 +30,21 @@ namespace App {
     struct DrawPingData {
       public float Multiplier;
       public long HighestJump;
+      public long HighestCellValue;
     }
 
     static void Main() {
       Console.CursorVisible = false;
       Console.Clear();
 
-      Timer timer = new Timer( t => {
+      Timer timer = new Timer() {
+        Enabled = true,
+        Interval = 1000
+      };
+      timer.Elapsed += new ElapsedEventHandler( (obj, e) => {
         TestSizes();
-
-        try {
-          Ping ping = new Ping();
-          PingReply pingReply = ping.Send( address );
-
-          DrawPingData pingData = DrawPing(
-            pingReply.RoundtripTime,
-            scopeSize_leftWidth + 1,
-            0,
-            scopeSize_graphWidth,
-            scopeSize_graphHeight
-          );
-
-          FillLeftScope( pingData );
-          FillBottomScope( pingReply, pingData );
-        } catch ( Exception ) {}
-      }, null, 1, 1000 );
-
+        Drawer();
+      } );
       Console.ReadKey();
     }
 
@@ -70,22 +60,55 @@ namespace App {
 
     static void TestSizes() {
       if ( savedConsoleWidth != Console.WindowWidth || savedConsoleHeight != Console.WindowHeight ) {
+        Console.Clear();
         CreateScene( scopeSize_leftWidth, scopeSize_bottomHeight );
 
+        savedConsoleWidth = Console.WindowWidth;
+        savedConsoleHeight = Console.WindowHeight;
         scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
         scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
       }
     }
+    static void Drawer() {
+      Ping ping = new Ping();
+      PingReply pingReply = ping.Send( address );
+
+      DrawPingData pingData = DrawPing(
+        pingReply.RoundtripTime,
+        scopeSize_leftWidth + 1,
+        0,
+        scopeSize_graphWidth,
+        scopeSize_graphHeight
+      );
+
+      FillLeftScope( pingData );
+      FillBottomScope( pingReply, pingData );
+    }
 
     static void FillLeftScope( DrawPingData pingData ) {
+      int jumps = scopeSize_graphHeight / 5;
+      int [] labels = new int[ jumps ];
 
+      for ( int i = 0;  i < jumps;  ++i )
+        labels[ i ] = (int) (pingData.HighestCellValue * (jumps - i) / jumps);
+
+      // for ( int i = jumps - 1;  i >= 0;  --i ) {
+      for ( int i = 0;  i < jumps;  ++i ) {
+        Console.CursorLeft = 0;
+        Console.CursorTop = i * 5;
+        Console.Write( "" + labels[ i ] );
+      }
     }
     static void FillBottomScope( PingReply pingReply, DrawPingData pingData ) {
+      long sum = 0;
+      Jumps.ForEach( j => sum += j );
+
       string str = "Adres: " + Untrim( address, 8 )
         + "   Ping: " + Untrim( pingReply.RoundtripTime, 8 )
         + "   Najwyższy: " + Untrim( pingData.HighestJump, 8 )
-        + "   Mnożnik: " + Untrim( pingData.Multiplier, 8 )
-        + "   Wysokość: " + Untrim( Console.WindowHeight - 2, 8 )
+        // + "   Mnożnik: " + Untrim( pingData.Multiplier, 8 )
+        // + "   Wysokość: " + Untrim( Console.WindowHeight - 2, 8 )
+        + "   Średni (" + ((int) (Jumps.Count / 60)) + "m): " + Untrim( sum / Jumps.Count, 8 )
         ;
 
       Console.CursorLeft = 0;
@@ -111,27 +134,6 @@ namespace App {
       Console.CursorLeft = leftBarWidth;
       Console.CursorTop = height - bottomBarHeight;
       Console.Write( "╩" );
-
-
-      // for ( int y = 0;  y <= height;  ++y ) {
-      //   for ( int x = 0;  x <= width;  ++x )
-      //     if ( y == 0 || y == height ) {
-      //       if ( x == 0 && y == 0 )
-      //         Console.Write( cornerLT );
-      //       else if ( x == 0 && y == height )
-      //         Console.Write( cornerLB );
-      //       else if ( x == width && y == 0 )
-      //         Console.Write( cornerRT );
-      //       else if ( x == width && y == height )
-      //         Console.Write( cornerRB );
-      //       else
-      //         Console.Write( row );
-      //     }
-      //     else if ( x == 0 || x == width )
-      //       Console.Write( column );
-      //     else
-      //       Console.Write( " " );
-      // }
     }
     static DrawPingData DrawPing( long ping, int x, int y, int width, int height ) {
       int pingWindowHeight = height;
@@ -140,13 +142,12 @@ namespace App {
 
       Jumps.Insert( 0, ping );
 
-      for ( int i = Jumps.Count - 1;  i > width;  --i )
+      for ( int i = Jumps.Count - 1;  i > MaxStoredJumps;  --i )
         Jumps.RemoveAt( i );
 
-      Jumps.ForEach( jump => {
-        if ( jump > highestJump )
-          highestJump = jump;
-      } );
+      for ( int i = Jumps.Count - 1;  i >= 0;  --i )
+        if ( Jumps[ i ] > highestJump )
+          highestJump = Jumps[ i ];
 
       long pingForMultiplier = highestJump;
 
@@ -195,7 +196,11 @@ namespace App {
 
       Console.ResetColor();
 
-      return new DrawPingData() { HighestJump=highestJump, Multiplier=multiplier };
+      return new DrawPingData() {
+        HighestJump = highestJump,
+        Multiplier = multiplier,
+        HighestCellValue = pingForMultiplier
+      };
     }
   }
 }
