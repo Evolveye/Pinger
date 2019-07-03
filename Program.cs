@@ -14,12 +14,12 @@ namespace App {
     static string address;
     static int redrawHelper = 0;
 
-    static int savedConsoleWidth = 0;
-    static int savedConsoleHeight = 0;
-    static int scopeSize_leftWidth = 5;
-    static int scopeSize_bottomHeight = 1;
-    static int scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
-    static int scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
+    static int SavedConsoleWidth = 0;
+    static int SavedConsoleHeight = 0;
+    static int ScopeSize_leftWidth = 5;
+    static int ScopeSize_bottomHeight = 1;
+    static int ScopeSize_graphWidth = Console.WindowWidth - ScopeSize_leftWidth - 2;
+    static int ScopeSize_graphHeight = Console.WindowHeight - ScopeSize_bottomHeight - 1;
 
     struct DrawPingData {
       public float Multiplier;
@@ -57,15 +57,15 @@ namespace App {
     }
 
     static void TestSizes() {
-      if ( redrawHelper++ == 0 ||savedConsoleWidth != Console.WindowWidth || savedConsoleHeight != Console.WindowHeight ) {
+      if ( redrawHelper++ == 0 ||SavedConsoleWidth != Console.WindowWidth || SavedConsoleHeight != Console.WindowHeight ) {
         Console.Clear();
-        CreateScene( scopeSize_leftWidth, scopeSize_bottomHeight );
+        CreateScene( ScopeSize_leftWidth, ScopeSize_bottomHeight );
 
         redrawHelper = 30;
-        savedConsoleWidth = Console.WindowWidth;
-        savedConsoleHeight = Console.WindowHeight;
-        scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
-        scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
+        SavedConsoleWidth = Console.WindowWidth;
+        SavedConsoleHeight = Console.WindowHeight;
+        ScopeSize_graphWidth = Console.WindowWidth - ScopeSize_leftWidth - 2;
+        ScopeSize_graphHeight = Console.WindowHeight - ScopeSize_bottomHeight - 1;
       }
     }
     static void Drawer() {
@@ -74,10 +74,10 @@ namespace App {
 
       DrawPingData pingData = DrawPing(
         pingReply.RoundtripTime,
-        scopeSize_leftWidth + 1,
+        ScopeSize_leftWidth + 1,
         0,
-        scopeSize_graphWidth,
-        scopeSize_graphHeight
+        ScopeSize_graphWidth,
+        ScopeSize_graphHeight
       );
 
       FillLeftScope( pingData );
@@ -85,7 +85,7 @@ namespace App {
     }
 
     static void FillLeftScope( DrawPingData pingData ) {
-      float jumps = scopeSize_graphHeight / 5;
+      float jumps = ScopeSize_graphHeight / 5;
       int [] labels = new int[ (int) jumps ];
 
       for ( int i = 0;  i < jumps;  ++i )
@@ -93,7 +93,7 @@ namespace App {
 
       for ( int i = 0;  i < jumps;  ++i ) {
         Console.CursorLeft = 0;
-        Console.CursorTop = (int) (scopeSize_graphHeight * i / jumps);
+        Console.CursorTop = (int) (ScopeSize_graphHeight * i / jumps);
         Console.Write( "" + labels[ i ] );
       }
     }
