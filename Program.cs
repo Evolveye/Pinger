@@ -11,7 +11,7 @@ namespace App {
     static int ReallyGood = 25;
     static int Good = 120;
     static int Warn = 180;
-    static string address = "google.com";
+    static string address;
 
     static int savedConsoleWidth = 0;
     static int savedConsoleHeight = 0;
@@ -20,13 +20,6 @@ namespace App {
     static int scopeSize_graphWidth = Console.WindowWidth - scopeSize_leftWidth - 2;
     static int scopeSize_graphHeight = Console.WindowHeight - scopeSize_bottomHeight - 1;
 
-    // static string row = "═";
-    // static string column = "║";
-    // static string cornerLT = "╔";
-    // static string cornerLB = "╚";
-    // static string cornerRT = "╗";
-    // static string cornerRB = "╝";
-
     struct DrawPingData {
       public float Multiplier;
       public long HighestJump;
@@ -34,6 +27,10 @@ namespace App {
     }
 
     static void Main() {
+      Console.Clear();
+      Console.Write( "\n Podaj adres do pingowania: ");
+      address = Console.ReadLine();
+
       Console.CursorVisible = false;
       Console.Clear();
 
@@ -86,16 +83,15 @@ namespace App {
     }
 
     static void FillLeftScope( DrawPingData pingData ) {
-      int jumps = scopeSize_graphHeight / 5;
-      int [] labels = new int[ jumps ];
+      float jumps = scopeSize_graphHeight / 5;
+      int [] labels = new int[ (int) jumps ];
 
       for ( int i = 0;  i < jumps;  ++i )
         labels[ i ] = (int) (pingData.HighestCellValue * (jumps - i) / jumps);
 
-      // for ( int i = jumps - 1;  i >= 0;  --i ) {
       for ( int i = 0;  i < jumps;  ++i ) {
         Console.CursorLeft = 0;
-        Console.CursorTop = i * 5;
+        Console.CursorTop = (int) (scopeSize_graphHeight * i / jumps);
         Console.Write( "" + labels[ i ] );
       }
     }
@@ -107,7 +103,7 @@ namespace App {
         + "   Ping: " + Untrim( pingReply.RoundtripTime, 8 )
         + "   Najwyższy: " + Untrim( pingData.HighestJump, 8 )
         // + "   Mnożnik: " + Untrim( pingData.Multiplier, 8 )
-        // + "   Wysokość: " + Untrim( Console.WindowHeight - 2, 8 )
+        // + "   Graf H: " + Untrim( scopeSize_graphHeight - 2, 8 )
         + "   Średni (" + ((int) (Jumps.Count / 60)) + "m): " + Untrim( sum / Jumps.Count, 8 )
         ;
 
