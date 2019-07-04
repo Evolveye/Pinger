@@ -143,7 +143,7 @@ namespace App {
       for ( int i = Jumps.Count - 1;  i > MaxStoredJumps;  --i )
         Jumps.RemoveAt( i );
 
-      for ( int i = Jumps.Count - 1;  i >= 0;  --i )
+      for ( int i = (Jumps.Count < width  ?  Jumps.Count  :  width) - 1;  i >= 0;  --i )
         if ( Jumps[ i ] > highestJump )
           highestJump = Jumps[ i ];
 
