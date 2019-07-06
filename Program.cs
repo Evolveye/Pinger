@@ -57,11 +57,11 @@ namespace App {
     }
 
     static void TestSizes() {
-      if ( redrawHelper++ == 0 ||SavedConsoleWidth != Console.WindowWidth || SavedConsoleHeight != Console.WindowHeight ) {
+      if ( redrawHelper-- <= 0 || SavedConsoleWidth != Console.WindowWidth || SavedConsoleHeight != Console.WindowHeight ) {
         Console.Clear();
         CreateScene( ScopeSize_leftWidth, ScopeSize_bottomHeight );
 
-        redrawHelper = 30;
+        redrawHelper = 60;
         SavedConsoleWidth = Console.WindowWidth;
         SavedConsoleHeight = Console.WindowHeight;
         ScopeSize_graphWidth = Console.WindowWidth - ScopeSize_leftWidth - 2;
