@@ -28,8 +28,12 @@ def mapInt( num, range1A, range1B, range2A, range2B ):
 
 
 def draw():
+  global biggerPing
+
   crossX = 6
   crossY = console_height - 3
+  pingsLen = len( pings )
+  labels = range( 0, int( (crossY - 1) / 5 ) + 1 )
 
   for h in range( 0, crossY ):
     stdscr.addstr( h, crossX, "║" )
@@ -39,14 +43,23 @@ def draw():
 
   stdscr.addstr( crossY, crossX, "╩" )
 
+  for i in range( 0, pingsLen - cosnole_width - crossX ):
+    if pings.pop() == biggerPing:
+      biggerPing = max( pings )
+
   for w in range( 0, cosnole_width - crossX - 1 ):
-    if w < len( pings ):
+    if w < pingsLen:
       for h in range( 0, crossY ):
         height = math.floor( mapInt( pings[ w ], 0, biggerPing, 0, crossY ) )
 
-        if height >= h:
-          color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
-          stdscr.addstr( crossY - h - 1, w + crossX + 1, f"#", curses.color_pair( color ) )
+        char = '#' if height >= h else ' '
+        color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
+        stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
+
+  for i in labels:
+    stdscr.addstr( i * 5, 0, f"{round( biggerPing / (i + 1) )}".rjust( crossX - 1, ' ' ) )
+
+  stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
@@ -63,12 +76,12 @@ def doPing():
   if ping > biggerPing:
     biggerPing = ping
 
-  pings.append( ping )
+  pings.insert( 0, ping )
 
   draw()
 
   # Timer( 1, doPing ).start()
-  Timer( .2, doPing ).start()
+  Timer( .05, doPing ).start()
 
 
 host = "google.com"
