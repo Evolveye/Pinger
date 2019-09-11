@@ -10,7 +10,8 @@ host = ""
 pings = []
 param = "-n" if platform.system().lower() == "windows" else "-c"
 command = [ "ping", param, "1", host ]
-current_time = lambda: round( time() * 1000 )
+biggerPing = 0
+current_time = lambda: (int) (round( time() * 1000 ))
 console_height, cosnole_width = [ int(i) for i in popen('stty size', 'r').read().split() ]
 
 stdscr = curses.initscr()
@@ -38,24 +39,36 @@ def draw():
 
   stdscr.addstr( crossY, crossX, "╩" )
 
-  for w in range( crossX + 1, cosnole_width - 1 ):
-    for h in range( 0, crossY ):
-      color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
-      stdscr.addstr( h, w, f"{color}", curses.color_pair( color ) )
+  for w in range( 0, cosnole_width - crossX - 1 ):
+    if w < len( pings ):
+      for h in range( 0, crossY ):
+        height = math.floor( mapInt( pings[ w ], 0, biggerPing, 0, crossY ) )
+
+        if height >= h:
+          color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
+          stdscr.addstr( crossY - h - 1, w + crossX + 1, f"#", curses.color_pair( color ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
 
 
 def doPing():
+  global biggerPing
+
   start = current_time()
   retcode = subprocess.call( command, stdout=subprocess.PIPE )
 
-  pings.append( current_time() - start )
+  ping = current_time() - start
+
+  if ping > biggerPing:
+    biggerPing = ping
+
+  pings.append( ping )
 
   draw()
 
-  Timer( 1, doPing ).start()
+  # Timer( 1, doPing ).start()
+  Timer( .2, doPing ).start()
 
 
 host = "google.com"
