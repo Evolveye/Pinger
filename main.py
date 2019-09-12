@@ -10,7 +10,10 @@ host = ""
 pings = []
 param = "-n" if platform.system().lower() == "windows" else "-c"
 command = [ "ping", param, "1", host ]
-biggerPing = 0
+biggestPing = 0
+intervalInSeconds = .5
+averageFromMinutes = 10
+countOfPings = int( averageFromMinutes * 60 / intervalInSeconds )
 current_time = lambda: (int) (round( time() * 1000 ))
 console_height, cosnole_width = [ int(i) for i in popen('stty size', 'r').read().split() ]
 
@@ -28,11 +31,12 @@ def mapInt( num, range1A, range1B, range2A, range2B ):
 
 
 def draw():
-  global biggerPing
+  global biggestPing
 
   crossX = 6
   crossY = console_height - 3
   pingsLen = len( pings )
+  biggestOnChart = 0 if pingsLen == 0 else max( pings[ slice( 0, cosnole_width - crossX ) ] )
   labels = range( 0, int( (crossY - 1) / 5 ) + 1 )
 
   for h in range( 0, crossY ):
@@ -43,45 +47,52 @@ def draw():
 
   stdscr.addstr( crossY, crossX, "╩" )
 
-  for i in range( 0, pingsLen - cosnole_width - crossX ):
-    if pings.pop() == biggerPing:
-      biggerPing = max( pings )
+  for i in range( 0, len( pings ) - countOfPings ):
+    if pings.pop() == biggestPing:
+      biggestPing = max( pings )
 
   for w in range( 0, cosnole_width - crossX - 1 ):
     if w < pingsLen:
       for h in range( 0, crossY ):
-        height = math.floor( mapInt( pings[ w ], 0, biggerPing, 0, crossY ) )
+        height = math.floor( mapInt( pings[ w ], 0, biggestOnChart, 0, crossY ) )
 
         char = '#' if height >= h else ' '
         color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
         stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
 
   for i in labels:
-    stdscr.addstr( i * 5, 0, f"{round( biggerPing / (i + 1) )}".rjust( crossX - 1, ' ' ) )
+    stdscr.addstr( i * 5, 0, f"{round( biggestOnChart / (i + 1) )}".rjust( crossX - 1, ' ' ) )
 
-  stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
+  stdscr.addstr( crossY + 1, 0, "Adres: " )
+  stdscr.addstr( host, curses.A_BOLD )
+  stdscr.addstr( "   Ping: " + f"{pings[ 0 ]}    " )
+  stdscr.addstr( crossY + 2, 0, f"Dane na przestrzeni " )
+  stdscr.addstr( f"{pingsLen}".center( len( str( countOfPings ) ) , ' ' ) + f" zliczeń ({intervalInSeconds}/s)", curses.A_BOLD )
+  stdscr.addstr( "   ->   " )
+  stdscr.addstr( "Największy: " + f"{biggestPing}".ljust( 6, ' ' ) )
+  stdscr.addstr( "Średni: " + f"{round( sum( pings ) / pingsLen )}".ljust( 6, ' ' ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
 
 
 def doPing():
-  global biggerPing
+  global biggestPing
 
   start = current_time()
   retcode = subprocess.call( command, stdout=subprocess.PIPE )
 
   ping = current_time() - start
 
-  if ping > biggerPing:
-    biggerPing = ping
+  if ping > biggestPing:
+    biggestPing = ping
 
   pings.insert( 0, ping )
 
   draw()
 
   # Timer( 1, doPing ).start()
-  Timer( .05, doPing ).start()
+  Timer( intervalInSeconds, doPing ).start()
 
 
 host = "google.com"
