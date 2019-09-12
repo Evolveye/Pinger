@@ -24,6 +24,7 @@ curses.init_pair( 2, 71,  curses.COLOR_BLACK ) # green
 curses.init_pair( 3, 221, curses.COLOR_BLACK ) # yellow
 curses.init_pair( 4, 203, curses.COLOR_BLACK ) # light red
 curses.init_pair( 5, 1, curses.COLOR_BLACK ) # red
+curses.init_pair( 6, 15, curses.COLOR_BLACK ) # skull
 
 
 def mapInt( num, range1A, range1B, range2A, range2B ):
@@ -54,11 +55,16 @@ def draw():
   for w in range( 0, cosnole_width - crossX - 1 ):
     if w < pingsLen:
       for h in range( 0, crossY ):
-        height = math.floor( mapInt( pings[ w ], 0, biggestOnChart, 0, crossY ) )
+        ping = pings[ w ]
 
-        char = '#' if height >= h else ' '
-        color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
-        stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
+        if ping == -1:
+          stdscr.addstr( int( crossY / 2 ), w + crossX + 1, '☠', curses.color_pair( 6 ) )
+        else:
+          height = math.floor( mapInt( ping, 0, biggestOnChart, 0, crossY ) )
+
+          char = '#' if height >= h else ' '
+          color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
+          stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
 
   for i in labels:
     stdscr.addstr( i * 5, 0, f"{round( biggestOnChart / (i + 1) )}".rjust( crossX - 1, ' ' ) )
@@ -80,9 +86,9 @@ def doPing():
   global biggestPing
 
   start = current_time()
-  retcode = subprocess.call( command, stdout=subprocess.PIPE )
+  retcode = subprocess.call( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 
-  ping = current_time() - start
+  ping = -1 if retcode != 0 else current_time() - start
 
   if ping > biggestPing:
     biggestPing = ping
@@ -98,7 +104,6 @@ def doPing():
 host = "google.com"
 command = [ "ping", param, "1", host ]
 doPing()
-
 # import curses
 
 # max_height = 17
