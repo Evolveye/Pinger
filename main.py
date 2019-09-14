@@ -75,7 +75,7 @@ def draw():
   crossY = console_height - 3
   pingsLen = len( pings )
   biggestOnChart = 0 if pingsLen == 0 else max( pings[ slice( 0, cosnole_width - crossX ) ] )
-  labels = [ round( biggestOnChart / (i + 1) ) for i in range( 0, crossY ) ]
+  labels = [ math.floor( biggestOnChart / crossY * i ) for i in reversed( range( 1, crossY + 1 ) ) ]
 
   for h in range( 0, crossY ):
     stdscr.addstr( h, crossX, "║" )
@@ -125,7 +125,7 @@ def draw():
   stdscr.refresh()
 
 
-def doPing():
+def do_ping():
   global biggest_ping
 
   start = current_time()
@@ -137,11 +137,6 @@ def doPing():
     biggest_ping = ping
 
   pings.insert( 0, ping )
-
-  # draw()
-
-  # Timer( 1, doPing ).start()
-  # Timer( interval_in_seconds, doPing ).start()
 
 
 def new_address():
@@ -187,17 +182,23 @@ def run():
 
   while True:
     if not setup_mode:
-      doPing()
+      do_ping()
       draw()
 
     sleep( interval_in_seconds )
 
 
 run()
+
+
+##
+##  CURSES COLORS VIEWER
+##
+#
 # import curses
-
+#
 # max_height = 17
-
+#
 # def main(stdscr):
 #     curses.start_color()
 #     curses.use_default_colors()
@@ -210,5 +211,5 @@ run()
 #         # End of screen reached
 #         pass
 #     stdscr.getch()
-
+#
 # curses.wrapper(main)
