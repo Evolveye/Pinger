@@ -7,6 +7,11 @@ import platform
 import subprocess
 import math
 
+class ColorPair:
+  def __init__( self, curses_color, lower_limit ):
+    self.color = curses_color
+    self.limit = lower_limit
+
 stdscr = curses.initscr()
 
 curses.echo( False )
@@ -17,6 +22,13 @@ curses.init_pair( 3, 221, curses.COLOR_BLACK ) # yellow
 curses.init_pair( 4, 203, curses.COLOR_BLACK ) # light red
 curses.init_pair( 5, 1,   curses.COLOR_BLACK ) # red
 curses.init_pair( 6, 15,  curses.COLOR_BLACK ) # skull
+colors_pairs = [
+  ColorPair( 1, 0 ),
+  ColorPair( 2, 30 ),
+  ColorPair( 3, 120 ),
+  ColorPair( 4, 180 ),
+  ColorPair( 5, 400 )
+]
 
 current_time = lambda: int( round( time() * 1000 ) )
 console_height, cosnole_width = [ int( i ) for i in popen( 'stty size', 'r' ).read().split() ]
@@ -44,6 +56,18 @@ def mapInt( num, range1A, range1B, range2A, range2B ):
   return (num - range1A) / (range1B - range1A) * (range2B - range2A) + range2A
 
 
+def color_on_chart( ping ):
+  for color_pair in colors_pairs:
+    if color_pair.limit > ping:
+      index = colors_pairs.index( color_pair )
+
+      if index == 0:
+        return color_pair.color
+      return colors_pairs[ index - 1 ].color
+
+  return colors_pairs[ - 1 ].color
+
+
 def draw():
   global biggest_ping
 
@@ -51,7 +75,7 @@ def draw():
   crossY = console_height - 3
   pingsLen = len( pings )
   biggestOnChart = 0 if pingsLen == 0 else max( pings[ slice( 0, cosnole_width - crossX ) ] )
-  labels = range( 0, int( (crossY - 1) / 5 ) + 1 )
+  labels = [ round( biggestOnChart / (i + 1) ) for i in range( 0, crossY ) ]
 
   for h in range( 0, crossY ):
     stdscr.addstr( h, crossX, "║" )
@@ -77,13 +101,13 @@ def draw():
         char = '☠' if h == int( crossY / 2 ) else ' '
       else:
         height = math.floor( mapInt( ping, 0, biggestOnChart, 0, crossY ) )
-        color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
+        color = color_on_chart( labels[ crossY - h - 1 ] )
         char = '#' if height > h else ' '
 
       stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
 
-  for i in labels:
-    stdscr.addstr( i * 5, 0, f"{round( biggestOnChart / (i + 1) )}".rjust( crossX - 1, ' ' ) )
+  for i in range( 0, crossY, 5 ):
+    stdscr.addstr( i, 0, f"{labels[ i ]}".rjust( crossX - 1, ' ' ) )
 
   only_good_pings = [ ping for ping in filter( lambda ping: ping != -1, pings ) ]
 
