@@ -1,30 +1,41 @@
 from time import time
 from threading import Timer
 from os import popen
+import threading
 import curses
 import platform
 import subprocess
 import math
 
-host = ""
-pings = []
-param = "-n" if platform.system().lower() == "windows" else "-c"
-command = [ "ping", param, "1", host ]
-biggestPing = 0
-intervalInSeconds = .5
-averageFromMinutes = 10
-countOfPings = int( averageFromMinutes * 60 / intervalInSeconds )
-current_time = lambda: (int) (round( time() * 1000 ))
-console_height, cosnole_width = [ int(i) for i in popen('stty size', 'r').read().split() ]
-
 stdscr = curses.initscr()
+
+curses.echo( False )
 curses.start_color()
 curses.init_pair( 1, 47,  curses.COLOR_BLACK ) # light green
 curses.init_pair( 2, 71,  curses.COLOR_BLACK ) # green
 curses.init_pair( 3, 221, curses.COLOR_BLACK ) # yellow
 curses.init_pair( 4, 203, curses.COLOR_BLACK ) # light red
-curses.init_pair( 5, 1, curses.COLOR_BLACK ) # red
-curses.init_pair( 6, 15, curses.COLOR_BLACK ) # skull
+curses.init_pair( 5, 1,   curses.COLOR_BLACK ) # red
+curses.init_pair( 6, 15,  curses.COLOR_BLACK ) # skull
+
+current_time = lambda: int( round( time() * 1000 ) )
+console_height, cosnole_width = [ int( i ) for i in popen( 'stty size', 'r' ).read().split() ]
+
+host = ""
+command = [ "ping", "-n" if platform.system().lower() == "windows" else "-c", "1", host ]
+
+pings = []
+setup_mode = True
+biggest_ping = 0
+interval_in_seconds = .5
+average_from_minutes = 10
+count_of_pings = int( average_from_minutes * 60 / interval_in_seconds )
+
+def change_host( new_host:str ):
+  global host
+
+  host = new_host
+  command[ 3 ] = host
 
 
 def mapInt( num, range1A, range1B, range2A, range2B ):
@@ -32,7 +43,7 @@ def mapInt( num, range1A, range1B, range2A, range2B ):
 
 
 def draw():
-  global biggestPing
+  global biggest_ping
 
   crossX = 6
   crossY = console_height - 3
@@ -48,9 +59,9 @@ def draw():
 
   stdscr.addstr( crossY, crossX, "╩" )
 
-  for i in range( 0, len( pings ) - countOfPings ):
-    if pings.pop() == biggestPing:
-      biggestPing = max( pings )
+  for i in range( 0, len( pings ) - count_of_pings ):
+    if pings.pop() == biggest_ping:
+      biggest_ping = max( pings )
 
   for w in range( 0, cosnole_width - crossX - 1 ):
     if w < pingsLen:
@@ -73,36 +84,51 @@ def draw():
   stdscr.addstr( host, curses.A_BOLD )
   stdscr.addstr( "   Ping: " + f"{pings[ 0 ]}    " )
   stdscr.addstr( crossY + 2, 0, f"Dane na przestrzeni " )
-  stdscr.addstr( f"{pingsLen}".center( len( str( countOfPings ) ) , ' ' ) + f" zliczeń ({intervalInSeconds}/s)", curses.A_BOLD )
+  stdscr.addstr( f"{pingsLen}".center( len( str( count_of_pings ) ) , ' ' ) + f" zliczeń ({interval_in_seconds}/s)", curses.A_BOLD )
   stdscr.addstr( "   ->   " )
-  stdscr.addstr( "Największy: " + f"{biggestPing}".ljust( 6, ' ' ) )
+  stdscr.addstr( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
   stdscr.addstr( "Średni: " + f"{round( sum( pings ) / pingsLen )}".ljust( 6, ' ' ) )
+  stdscr.addstr( "Setup: " + f"{setup_mode}".ljust( 6, ' ' ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
 
 
 def doPing():
-  global biggestPing
+  if not setup_mode:
+    global biggest_ping
 
-  start = current_time()
-  retcode = subprocess.call( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+    start = current_time()
+    retcode = subprocess.call( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 
-  ping = -1 if retcode != 0 else current_time() - start
+    ping = -1 if retcode != 0 else current_time() - start
 
-  if ping > biggestPing:
-    biggestPing = ping
+    if ping > biggest_ping:
+      biggest_ping = ping
 
-  pings.insert( 0, ping )
+    pings.insert( 0, ping )
 
-  draw()
+    draw()
 
   # Timer( 1, doPing ).start()
-  Timer( intervalInSeconds, doPing ).start()
+  Timer( interval_in_seconds, doPing ).start()
 
 
-host = "google.com"
-command = [ "ping", param, "1", host ]
+def keys_detector():
+  global setup_mode
+
+  while True:
+    char = stdscr.getch()
+
+    if char == ord( '[' ):
+      setup_mode = True
+    elif char == ord( ']' ):
+      setup_mode = False
+
+
+stdscr.addstr( 6, 6, "Wciścij [ aby włączyć tryb ustawień, ] aby z niego wyjść" )
+threading.Thread( target=keys_detector ).start()
+change_host( "google.com" )
 doPing()
 # import curses
 
