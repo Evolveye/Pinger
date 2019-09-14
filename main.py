@@ -31,6 +31,8 @@ interval_in_seconds = .5
 average_from_minutes = 10
 count_of_pings = int( average_from_minutes * 60 / interval_in_seconds )
 
+info_new_address = '1'
+
 def change_host( new_host:str ):
   global host
 
@@ -54,7 +56,7 @@ def draw():
   for h in range( 0, crossY ):
     stdscr.addstr( h, crossX, "║" )
 
-  for w in range( 0, cosnole_width - 1 ):
+  for w in range( 0, cosnole_width ):
     stdscr.addstr( crossY, w, "═" )
 
   stdscr.addstr( crossY, crossX, "╩" )
@@ -64,18 +66,21 @@ def draw():
       biggest_ping = max( pings )
 
   for w in range( 0, cosnole_width - crossX - 1 ):
-    if w < pingsLen:
-      for h in range( 0, crossY ):
-        ping = pings[ w ]
+    ping = pings[ w ] if w < pingsLen else 0
 
-        if ping == -1:
-          stdscr.addstr( int( crossY / 2 ), w + crossX + 1, '☠', curses.color_pair( 6 ) )
-        else:
-          height = math.floor( mapInt( ping, 0, biggestOnChart, 0, crossY ) )
+    for h in range( 0, crossY ):
+      color = 0
+      char = ' '
 
-          char = '#' if height >= h else ' '
-          color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
-          stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
+      if ping == -1:
+        color = 6
+        char = '☠' if h == int( crossY / 2 ) else ' '
+      else:
+        height = math.floor( mapInt( ping, 0, biggestOnChart, 0, crossY ) )
+        color = math.floor( mapInt( h, 0, crossY, 1, 6 ) )
+        char = '#' if height > h else ' '
+
+      stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
 
   for i in labels:
     stdscr.addstr( i * 5, 0, f"{round( biggestOnChart / (i + 1) )}".rjust( crossX - 1, ' ' ) )
@@ -83,12 +88,12 @@ def draw():
   stdscr.addstr( crossY + 1, 0, "Adres: " )
   stdscr.addstr( host, curses.A_BOLD )
   stdscr.addstr( "   Ping: " + f"{pings[ 0 ]}    " )
+  stdscr.addstr( f"   Aby wprowadzić nowy adres wciśnij {info_new_address} " )
   stdscr.addstr( crossY + 2, 0, f"Dane na przestrzeni " )
-  stdscr.addstr( f"{pingsLen}".center( len( str( count_of_pings ) ) , ' ' ) + f" zliczeń ({interval_in_seconds}/s)", curses.A_BOLD )
+  stdscr.addstr( f"{pingsLen}".center( len( str( count_of_pings ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", curses.A_BOLD )
   stdscr.addstr( "   ->   " )
   stdscr.addstr( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
   stdscr.addstr( "Średni: " + f"{round( sum( pings ) / pingsLen )}".ljust( 6, ' ' ) )
-  stdscr.addstr( "Setup: " + f"{setup_mode}".ljust( 6, ' ' ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
@@ -144,7 +149,7 @@ def keys_detector():
     if not setup_mode:
       char = stdscr.getch()
 
-      if char == ord( '[' ):
+      if char == ord( info_new_address ):
         new_address()
 
 
