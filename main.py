@@ -113,22 +113,46 @@ def doPing():
   # Timer( interval_in_seconds, doPing ).start()
 
 
+def new_address():
+  global setup_mode
+
+  clear()
+
+  stdscr.addstr( 2, 2, "Wprowadź nowy adres: ", curses.A_BOLD )
+
+  setup_mode = True
+  curses.echo( True )
+  string = stdscr.getstr().decode( encoding="utf-8" )
+  curses.echo( False )
+  setup_mode = False
+
+  change_host( string )
+
+  clear()
+
+
+def clear():
+  for w in range( 0, cosnole_width - 1 ):
+    for h in range( 0, console_height ):
+      stdscr.addstr( h, w, ' ' )
+
+
 def keys_detector():
   global setup_mode
 
   while True:
-    char = stdscr.getch()
+    if not setup_mode:
+      char = stdscr.getch()
 
-    if char == ord( '[' ):
-      setup_mode = True
-    elif char == ord( ']' ):
-      setup_mode = False
+      if char == ord( '[' ):
+        new_address()
 
 
 def run():
-  stdscr.addstr( 6, 6, "Wciścij [ aby włączyć tryb ustawień, ] aby z niego wyjść" )
+  global setup_mode
+
+  setup_mode = False
   threading.Thread( target=keys_detector ).start()
-  change_host( "google.com" )
 
   while True:
     if not setup_mode:
