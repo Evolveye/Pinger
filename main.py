@@ -1,4 +1,4 @@
-from time import time
+from time import time, sleep
 from threading import Timer
 from os import popen
 import threading
@@ -95,23 +95,22 @@ def draw():
 
 
 def doPing():
-  if not setup_mode:
-    global biggest_ping
+  global biggest_ping
 
-    start = current_time()
-    retcode = subprocess.call( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+  start = current_time()
+  retcode = subprocess.call( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
 
-    ping = -1 if retcode != 0 else current_time() - start
+  ping = -1 if retcode != 0 else current_time() - start
 
-    if ping > biggest_ping:
-      biggest_ping = ping
+  if ping > biggest_ping:
+    biggest_ping = ping
 
-    pings.insert( 0, ping )
+  pings.insert( 0, ping )
 
-    draw()
+  # draw()
 
   # Timer( 1, doPing ).start()
-  Timer( interval_in_seconds, doPing ).start()
+  # Timer( interval_in_seconds, doPing ).start()
 
 
 def keys_detector():
@@ -126,10 +125,20 @@ def keys_detector():
       setup_mode = False
 
 
-stdscr.addstr( 6, 6, "Wciścij [ aby włączyć tryb ustawień, ] aby z niego wyjść" )
-threading.Thread( target=keys_detector ).start()
-change_host( "google.com" )
-doPing()
+def run():
+  stdscr.addstr( 6, 6, "Wciścij [ aby włączyć tryb ustawień, ] aby z niego wyjść" )
+  threading.Thread( target=keys_detector ).start()
+  change_host( "google.com" )
+
+  while True:
+    if not setup_mode:
+      doPing()
+      draw()
+
+    sleep( interval_in_seconds )
+
+
+run()
 # import curses
 
 # max_height = 17
