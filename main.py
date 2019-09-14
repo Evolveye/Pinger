@@ -29,7 +29,7 @@ setup_mode = True
 biggest_ping = 0
 interval_in_seconds = .5
 average_from_minutes = 10
-count_of_pings = int( average_from_minutes * 60 / interval_in_seconds )
+max_pings_count = int( average_from_minutes * 60 / interval_in_seconds )
 
 info_new_address = '1'
 
@@ -61,7 +61,7 @@ def draw():
 
   stdscr.addstr( crossY, crossX, "╩" )
 
-  for i in range( 0, len( pings ) - count_of_pings ):
+  for i in range( 0, len( pings ) - max_pings_count ):
     if pings.pop() == biggest_ping:
       biggest_ping = max( pings )
 
@@ -85,15 +85,17 @@ def draw():
   for i in labels:
     stdscr.addstr( i * 5, 0, f"{round( biggestOnChart / (i + 1) )}".rjust( crossX - 1, ' ' ) )
 
+  only_good_pings = [ ping for ping in filter( lambda ping: ping != -1, pings ) ]
+
   stdscr.addstr( crossY + 1, 0, "Adres: " )
   stdscr.addstr( host, curses.A_BOLD )
   stdscr.addstr( "   Ping: " + f"{pings[ 0 ]}    " )
   stdscr.addstr( f"   Aby wprowadzić nowy adres wciśnij {info_new_address} " )
   stdscr.addstr( crossY + 2, 0, f"Dane na przestrzeni " )
-  stdscr.addstr( f"{pingsLen}".center( len( str( count_of_pings ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", curses.A_BOLD )
+  stdscr.addstr( f"{len( only_good_pings )}".center( len( str( max_pings_count ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", curses.A_BOLD )
   stdscr.addstr( "   ->   " )
   stdscr.addstr( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
-  stdscr.addstr( "Średni: " + f"{round( sum( pings ) / pingsLen )}".ljust( 6, ' ' ) )
+  stdscr.addstr( "Średni: " + f"{round( sum( only_good_pings ) / pingsLen )}".ljust( 6, ' ' ) )
 
   curses.curs_set( 0 )
   stdscr.refresh()
