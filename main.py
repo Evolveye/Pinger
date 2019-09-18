@@ -18,6 +18,8 @@ win.autoupdate = False
 
 color_default = pygcurse.Color( 175, 175, 175 )
 color_distinction = pygcurse.Color( 255, 255, 255 )
+color_frame_fg = pygcurse.Color( 100, 100, 100 )
+color_frame_bg = pygcurse.Color( 50, 50, 50 )
 
 colors_pairs = [
   ColorPair( 0,   pygcurse.Color( 0,   255, 0 ) ),
@@ -80,15 +82,15 @@ def draw():
   crossY = console_height - 5
   pingsLen = len( pings )
   biggestOnChart = 0 if pingsLen == 0 else max( pings[ slice( 0, cosnole_width - crossX ) ] )
-  labels = [ biggestOnChart // crossY * i for i in reversed( range( 1, crossY + 1 ) ) ]
+  labels = [ math.floor( biggestOnChart / crossY * i ) for i in reversed( range( 1, crossY + 1 ) ) ]
 
   for y in range( 0, crossY ):
-    win.write( frame_colums, crossX, y )
+    win.write( frame_colums, crossX, y, color_frame_fg, color_frame_bg )
 
   for x in range( 0, cosnole_width ):
-    win.write( frame_row, x, crossY )
+    win.write( frame_row, x, crossY, color_frame_fg, color_frame_bg )
 
-  win.write( frame_cross, crossX, crossY )
+  win.write( frame_cross, crossX, crossY, color_frame_fg, color_frame_bg )
 
   for y in range( 0, len( pings ) - max_pings_count ):
     if pings.pop() == biggest_ping:
@@ -116,11 +118,11 @@ def draw():
 
   only_good_pings = [ ping for ping in filter( lambda ping: ping != -1, pings ) ]
 
-  win.write( "Adres: ", 0, crossY + 2 )
+  win.write( "Adres: ", 1, crossY + 2 )
   win.write( host, fgcolor=color_distinction )
   win.write( "   Ping: " + f"{pings[ 0 ]}    " )
   win.write( f"   Aby wprowadzić nowy adres wciśnij {info_new_address} " )
-  win.write( f"Dane na przestrzeni ", 0, crossY + 3 )
+  win.write( f"Dane na przestrzeni ", 1, crossY + 3 )
   win.write( f"{len( only_good_pings )}".center( len( str( max_pings_count ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", fgcolor=color_distinction )
   win.write( "   ->   " )
   win.write( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
@@ -147,12 +149,14 @@ def do_ping():
 def new_address():
   global setup_mode
 
+  setup_mode = True
+
   clear()
 
-  win.write( "Wprowadź nowy adres: ", 2, 2, color_default )
+  win.write( "Wprowadź nowy adres: ", 2, 2, color_distinction )
 
-  setup_mode = True
   change_host( win.input() )
+
   setup_mode = False
 
   clear()
