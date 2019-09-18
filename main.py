@@ -1,42 +1,42 @@
 from time import time, sleep
 from threading import Timer
 from os import popen
+import sys
 import threading
-import curses
+import pygcurse
 import platform
 import subprocess
 import math
 
 class ColorPair:
-  def __init__( self, curses_color, lower_limit ):
-    self.color = curses_color
+  def __init__( self, lower_limit, chart_color ):
+    self.color = chart_color
     self.limit = lower_limit
 
-stdscr = curses.initscr()
+win = pygcurse.PygcurseWindow()
+win.autoupdate = False
 
-curses.echo( False )
-curses.start_color()
-curses.init_pair( 1, 47,  curses.COLOR_BLACK ) # light green
-curses.init_pair( 2, 71,  curses.COLOR_BLACK ) # green
-curses.init_pair( 3, 221, curses.COLOR_BLACK ) # yellow
-curses.init_pair( 4, 203, curses.COLOR_BLACK ) # light red
-curses.init_pair( 5, 1,   curses.COLOR_BLACK ) # red
-curses.init_pair( 6, 15,  curses.COLOR_BLACK ) # skull
+color_default = pygcurse.Color( 175, 175, 175 )
+color_distinction = pygcurse.Color( 255, 255, 255 )
+
 colors_pairs = [
-  ColorPair( 1, 0 ),
-  ColorPair( 2, 30 ),
-  ColorPair( 3, 120 ),
-  ColorPair( 4, 180 ),
-  ColorPair( 5, 400 )
+  ColorPair( 0,   pygcurse.Color( 0,   255, 0 ) ),
+  ColorPair( 30,  pygcurse.Color( 0,   175, 0 ) ),
+  ColorPair( 120, pygcurse.Color( 255, 255, 0 ) ),
+  ColorPair( 180, pygcurse.Color( 255, 0,   0 ) ),
+  ColorPair( 400, pygcurse.Color( 175, 0,   0 ) ),
 ]
 
 current_time = lambda: int( round( time() * 1000 ) )
-console_height, cosnole_width = [ int( i ) for i in popen( 'stty size', 'r' ).read().split() ]
+console_height = win.height
+cosnole_width = win.width
+# console_height, cosnole_width = [ int( i ) for i in popen( 'stty size', 'r' ).read().split() ]
 
 host = ""
 command = [ "ping", "-n" if platform.system().lower() == "windows" else "-c", "1", host ]
 
 pings = []
+running = True
 setup_mode = True
 biggest_ping = 0
 interval_in_seconds = .5
@@ -44,6 +44,11 @@ average_from_minutes = 10
 max_pings_count = int( average_from_minutes * 60 / interval_in_seconds )
 
 info_new_address = '1'
+
+frame_cross = "+" # "╩"
+frame_colums = "|" # "║"
+frame_row = "-" # "═"
+
 
 def change_host( new_host:str ):
   global host
@@ -69,60 +74,60 @@ def color_on_chart( ping ):
 
 
 def draw():
-  global biggest_ping
+  global setup_mode, biggest_ping
 
   crossX = 6
-  crossY = console_height - 3
+  crossY = console_height - 5
   pingsLen = len( pings )
   biggestOnChart = 0 if pingsLen == 0 else max( pings[ slice( 0, cosnole_width - crossX ) ] )
-  labels = [ math.floor( biggestOnChart / crossY * i ) for i in reversed( range( 1, crossY + 1 ) ) ]
+  labels = [ biggestOnChart // crossY * i for i in reversed( range( 1, crossY + 1 ) ) ]
 
-  for h in range( 0, crossY ):
-    stdscr.addstr( h, crossX, "║" )
+  for y in range( 0, crossY ):
+    win.write( frame_colums, crossX, y )
 
-  for w in range( 0, cosnole_width ):
-    stdscr.addstr( crossY, w, "═" )
+  for x in range( 0, cosnole_width ):
+    win.write( frame_row, x, crossY )
 
-  stdscr.addstr( crossY, crossX, "╩" )
+  win.write( frame_cross, crossX, crossY )
 
-  for i in range( 0, len( pings ) - max_pings_count ):
+  for y in range( 0, len( pings ) - max_pings_count ):
     if pings.pop() == biggest_ping:
       biggest_ping = max( pings )
 
-  for w in range( 0, cosnole_width - crossX - 1 ):
-    ping = pings[ w ] if w < pingsLen else 0
+  for x in range( 0, cosnole_width - crossX - 1 ):
+    ping = pings[ x ] if x < pingsLen else 0
 
-    for h in range( 0, crossY ):
+    for y in range( 0, crossY ):
       color = 0
       char = ' '
 
       if ping == -1:
-        color = 6
-        char = '☠' if h == int( crossY / 2 ) else ' '
+        color = pygcurse.Color( 255, 255, 255 )
+        char = 'X' if y == int( crossY / 2 ) else ' '
       else:
         height = math.floor( mapInt( ping, 0, biggestOnChart, 0, crossY ) )
-        color = color_on_chart( labels[ crossY - h - 1 ] )
-        char = '#' if height > h else ' '
+        color = color_on_chart( labels[ crossY - y - 1 ] )
+        char = '#' if height > y else ' '
 
-      stdscr.addstr( crossY - h - 1, w + crossX + 1, char, curses.color_pair( color ) )
+      win.putchars( char, x + crossX + 1, crossY - y - 1, color )
 
-  for i in range( 0, crossY, 5 ):
-    stdscr.addstr( i, 0, f"{labels[ i ]}".rjust( crossX - 1, ' ' ) )
+  for y in range( 0, crossY, 5 ):
+    win.write( f"{labels[ y ]}".rjust( crossX - 1, ' ' ), 0, y )
 
   only_good_pings = [ ping for ping in filter( lambda ping: ping != -1, pings ) ]
 
-  stdscr.addstr( crossY + 1, 0, "Adres: " )
-  stdscr.addstr( host, curses.A_BOLD )
-  stdscr.addstr( "   Ping: " + f"{pings[ 0 ]}    " )
-  stdscr.addstr( f"   Aby wprowadzić nowy adres wciśnij {info_new_address} " )
-  stdscr.addstr( crossY + 2, 0, f"Dane na przestrzeni " )
-  stdscr.addstr( f"{len( only_good_pings )}".center( len( str( max_pings_count ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", curses.A_BOLD )
-  stdscr.addstr( "   ->   " )
-  stdscr.addstr( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
-  stdscr.addstr( "Średni: " + f"{round( sum( only_good_pings ) / pingsLen )}".ljust( 6, ' ' ) )
+  win.write( "Adres: ", 0, crossY + 2 )
+  win.write( host, fgcolor=color_distinction )
+  win.write( "   Ping: " + f"{pings[ 0 ]}    " )
+  win.write( f"   Aby wprowadzić nowy adres wciśnij {info_new_address} " )
+  win.write( f"Dane na przestrzeni ", 0, crossY + 3 )
+  win.write( f"{len( only_good_pings )}".center( len( str( max_pings_count ) ) , ' ' ) + f" zliczeń ({1 / interval_in_seconds}/s)", fgcolor=color_distinction )
+  win.write( "   ->   " )
+  win.write( "Największy: " + f"{biggest_ping}".ljust( 6, ' ' ) )
+  win.write( "Średni: " + f"{round( sum( only_good_pings ) / pingsLen )}".ljust( 6, ' ' ) )
 
-  curses.curs_set( 0 )
-  stdscr.refresh()
+  if not setup_mode:
+    win.update()
 
 
 def do_ping():
@@ -144,43 +149,40 @@ def new_address():
 
   clear()
 
-  stdscr.addstr( 2, 2, "Wprowadź nowy adres: ", curses.A_BOLD )
+  win.write( "Wprowadź nowy adres: ", 2, 2, color_default )
 
   setup_mode = True
-  curses.echo( True )
-  string = stdscr.getstr().decode( encoding="utf-8" )
-  curses.echo( False )
+  change_host( win.input() )
   setup_mode = False
-
-  change_host( string )
 
   clear()
 
 
 def clear():
-  for w in range( 0, cosnole_width - 1 ):
-    for h in range( 0, console_height ):
-      stdscr.addstr( h, w, ' ' )
+  win.setscreencolors( clear=True )
 
 
 def keys_detector():
-  global setup_mode
+  global setup_mode, running
 
-  while True:
-    if not setup_mode:
-      char = stdscr.getch()
-
-      if char == ord( info_new_address ):
-        new_address()
+  while running:
+    for event in pygcurse.pygame.event.get():
+      if event.type == pygcurse.QUIT or (event.type == pygcurse.KEYDOWN and event.key == pygcurse.K_ESCAPE):
+        pygcurse.pygame.quit()
+        running = False
+        break
+      elif event.type == pygcurse.KEYDOWN:
+        if event.unicode == info_new_address:
+          new_address()
 
 
 def run():
-  global setup_mode
+  global setup_mode, running
 
   setup_mode = False
   threading.Thread( target=keys_detector ).start()
 
-  while True:
+  while running:
     if not setup_mode:
       do_ping()
       draw()
@@ -189,27 +191,3 @@ def run():
 
 
 run()
-
-
-##
-##  CURSES COLORS VIEWER
-##
-#
-# import curses
-#
-# max_height = 17
-#
-# def main(stdscr):
-#     curses.start_color()
-#     curses.use_default_colors()
-#     for i in range(0, curses.COLORS):
-#         curses.init_pair(i + 1, i, -1)
-#     try:
-#         for i in range(0, 255):
-#             stdscr.addstr( i % max_height, (int)(i / max_height) * 7, f"▉▉#{i}", curses.color_pair(i))
-#     except curses.ERR:
-#         # End of screen reached
-#         pass
-#     stdscr.getch()
-#
-# curses.wrapper(main)
