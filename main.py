@@ -13,7 +13,7 @@ class ColorPair:
     self.color = chart_color
     self.limit = lower_limit
 
-win = pygcurse.PygcurseWindow()
+win = pygcurse.PygcurseWindow( 100, 50 )
 win.autoupdate = False
 
 color_default = pygcurse.Color( 175, 175, 175 )
@@ -32,7 +32,6 @@ colors_pairs = [
 current_time = lambda: int( round( time() * 1000 ) )
 console_height = win.height
 cosnole_width = win.width
-# console_height, cosnole_width = [ int( i ) for i in popen( 'stty size', 'r' ).read().split() ]
 
 host = ""
 command = [ "ping", "-n" if platform.system().lower() == "windows" else "-c", "1", host ]
